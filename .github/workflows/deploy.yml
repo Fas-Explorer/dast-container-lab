@@ -13,23 +13,57 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Azure Login using OIDC
-        uses: azure/login@v2
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    # -----------------------------
+    # LOGIN
+    # -----------------------------
+    - name: Azure Login using OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ vars.AZURE_CLIENT_ID }}
+        tenant-id: ${{ vars.AZURE_TENANT_ID }}
+        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-     
+    # -----------------------------
+    # STAGE 1: BOOTSTRAP ACI
+    # -----------------------------
+    - name: Stage 1 - Bootstrap ACI with Managed Identity
+      run: |
+        az container create \
+          --resource-group rg-container-lab \
+          --name dast-container \
+          --image mcr.microsoft.com/oss/nginx/nginx:1.25 \
+          --assign-identity \
+          --cpu 1 \
+          --memory 1.5 \
+          --restart-policy Never \
+          --only-show-errors || true
 
-      - name: Deploy container to Azure Container Instance
-        run: |
-          az container create \
-            --resource-group rg-container-lab \
-            --name dast-container \
-            --image ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:latest \
-            --cpu 1 \
-            --memory 1.5 \
-            --ip-address Public \
-            --ports 80 \
-            --restart-policy Always
+    # -----------------------------
+    # STAGE 2: GRANT ACR PULL
+    # -----------------------------
+    - name: Stage 2 - Grant AcrPull to ACI Identity
+      run: |
+        ACI_PRINCIPAL_ID=$(az container show \
+          --resource-group rg-container-lab \
+          --name dast-container \
+          --query identity.principalId \
+          -o tsv)
+
+        az role assignment create \
+          --assignee $ACI_PRINCIPAL_ID \
+          --role AcrPull \
+          --scope /subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/rg-security-lab/providers/Microsoft.ContainerRegistry/registries/${{ vars.ACR_NAME }} \
+          --only-show-errors || true
+
+    # -----------------------------
+    # STAGE 3: DEPLOY REAL IMAGE
+    # -----------------------------
+    - name: Stage 3 - Deploy Application Image
+      run: |
+        az container update \
+          --resource-group rg-container-lab \
+          --name dast-container \
+          --image ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:latest \
+          --ip-address Public \
+          --ports 80 \
+          --only-show-errors
