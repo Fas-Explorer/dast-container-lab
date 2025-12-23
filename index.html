@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DAST Test App</title>
+</head>
+<body>
+
+  <h2>DAST Test App</h2>
+  <p>Message from URL:</p>
+
+  <div id="output"></div>
+
+  <!-- intentionally unsafe for DAST / OWASP testing -->
+  <script>
+    const msg = new URLSearchParams(window.location.search).get("msg");
+    if (msg) {
+      document.getElementById("output").innerHTML = msg;
+    }
+  </script>
+
+</body>
+</html>
