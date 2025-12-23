@@ -24,19 +24,28 @@ jobs:
         subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
     # -----------------------------
-    # STAGE 1: BOOTSTRAP ACI
+    # STAGE 1: ENSURE ACI EXISTS
     # -----------------------------
-    - name: Stage 1 - Bootstrap ACI with Managed Identity
+    - name: Stage 1 - Ensure ACI exists with Managed Identity
       run: |
-        az container create \
+        if az container show \
           --resource-group rg-container-lab \
           --name dast-container \
-          --image mcr.microsoft.com/oss/nginx/nginx:1.25 \
-          --assign-identity \
-          --cpu 1 \
-          --memory 1.5 \
-          --restart-policy Never \
-          --only-show-errors || true
+          --only-show-errors >/dev/null 2>&1; then
+          echo "ACI already exists"
+        else
+          echo "Creating ACI..."
+          az container create \
+            --resource-group rg-container-lab \
+            --name dast-container \
+            --location centralindia \
+            --image mcr.microsoft.com/oss/nginx/nginx:1.25 \
+            --assign-identity \
+            --cpu 1 \
+            --memory 1.5 \
+            --restart-policy Never \
+            --only-show-errors
+        fi
 
     # -----------------------------
     # STAGE 2: GRANT ACR PULL
@@ -48,6 +57,8 @@ jobs:
           --name dast-container \
           --query identity.principalId \
           -o tsv)
+
+        echo "ACI Principal ID: $ACI_PRINCIPAL_ID"
 
         az role assignment create \
           --assignee $ACI_PRINCIPAL_ID \
