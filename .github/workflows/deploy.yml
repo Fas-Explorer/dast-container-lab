@@ -20,24 +20,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Fetch ACR credentials
-        run: |
-          echo "Fetching ACR credentials from Azure"
-
-          ACR_NAME="${{ vars.ACR_NAME }}"
-
-          ACR_USERNAME=$(az acr credential show \
-            --name "$ACR_NAME" \
-            --resource-group rg-security-lab \
-            --query "username" -o tsv)
-
-          ACR_PASSWORD=$(az acr credential show \
-            --name "$ACR_NAME" \
-            --resource-group rg-security-lab \
-            --query "passwords[0].value" -o tsv)
-
-          echo "ACR_USERNAME=$ACR_USERNAME" >> $GITHUB_ENV
-          echo "ACR_PASSWORD=$ACR_PASSWORD" >> $GITHUB_ENV
+     
 
       - name: Deploy container to Azure Container Instance
         run: |
