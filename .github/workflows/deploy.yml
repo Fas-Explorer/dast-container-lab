@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Azure login (OIDC)
+      - name: Azure Login using OIDC
         uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -22,21 +22,22 @@ jobs:
 
       - name: Fetch ACR credentials
         run: |
-          echo "Fetching ACR credentials"
-          ACR_NAME=$(echo "${{ vars.ACR_LOGIN_SERVER }}" | cut -d'.' -f1)
+          echo "Fetching ACR credentials from Azure"
+
+          ACR_NAME="${{ vars.ACR_NAME }}"
 
           ACR_USERNAME=$(az acr credential show \
-            --name $ACR_NAME \
+            --name "$ACR_NAME" \
             --query "username" -o tsv)
 
           ACR_PASSWORD=$(az acr credential show \
-            --name $ACR_NAME \
+            --name "$ACR_NAME" \
             --query "passwords[0].value" -o tsv)
 
           echo "ACR_USERNAME=$ACR_USERNAME" >> $GITHUB_ENV
           echo "ACR_PASSWORD=$ACR_PASSWORD" >> $GITHUB_ENV
 
-      - name: Deploy container to ACI
+      - name: Deploy container to Azure Container Instance
         run: |
           az container create \
             --resource-group rg-container-lab \
