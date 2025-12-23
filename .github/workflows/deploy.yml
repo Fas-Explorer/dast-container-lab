@@ -40,6 +40,7 @@ jobs:
             --name dast-container \
             --location centralindia \
             --image mcr.microsoft.com/oss/nginx/nginx:1.25 \
+            --os-type Linux \
             --assign-identity \
             --cpu 1 \
             --memory 1.5 \
