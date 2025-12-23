@@ -30,9 +30,6 @@ jobs:
             --image ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:latest \
             --cpu 1 \
             --memory 1.5 \
-            --registry-login-server ${{ vars.ACR_LOGIN_SERVER }} \
-            --registry-username $ACR_USERNAME \
-            --registry-password $ACR_PASSWORD \
             --ip-address Public \
             --ports 80 \
             --restart-policy Always
